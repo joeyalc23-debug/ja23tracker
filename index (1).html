@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JA23 Performance — Weekly Log</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background: #F5F2EC;
+    color: #1A1A1A;
+    padding-bottom: 40px;
+  }
+  button { font-family: inherit; }
+  .hidden { display: none !important; }
+
+  /* Gate screens */
+  .gate-wrap {
+    max-width: 380px;
+    margin: 0 auto;
+    padding: 80px 24px 40px;
+    text-align: center;
+    position: relative;
+  }
+  .gate-mark { font-size: 13px; font-weight: 800; letter-spacing: 3px; color: #E8542A; margin-bottom: 12px; }
+  .gate-title { font-size: 32px; font-weight: 800; margin: 0 0 8px; color: #1F1B16; }
+  .gate-sub { font-size: 14px; color: #6B6459; margin-bottom: 28px; line-height: 1.5; }
+  .gate-input {
+    width: 100%; padding: 14px 16px; font-size: 16px; border: 2px solid #1F1B16;
+    border-radius: 4px; margin-bottom: 12px; background: #fff;
+  }
+  .gate-btn {
+    width: 100%; padding: 14px 16px; font-size: 15px; font-weight: 700;
+    background: #1F1B16; color: #F5F2EC; border: none; border-radius: 4px;
+    cursor: pointer; letter-spacing: 0.5px;
+  }
+  .coach-link-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin: 20px auto 0; background: none; border: none; color: #8A8272;
+    font-size: 12.5px; cursor: pointer;
+  }
+  .back-link {
+    display: flex; align-items: center; gap: 6px; background: none; border: none;
+    color: #8A8272; font-size: 13px; cursor: pointer; margin-bottom: 16px;
+    position: absolute; top: 24px; left: 24px;
+  }
+  .pin-error { color: #C0392B; font-size: 12.5px; margin-bottom: 10px; margin-top: -4px; }
+
+  /* Header */
+  .header {
+    padding: 24px 20px 16px; border-bottom: 3px solid #1F1B16;
+    background: #1F1B16; color: #F5F2EC; display: flex; align-items: center; gap: 12px;
+  }
+  .header-back { background: none; border: none; cursor: pointer; padding: 0; color: #F5F2EC; font-size: 18px; }
+  .header-mark { font-size: 11px; font-weight: 800; letter-spacing: 2.5px; color: #E8542A; margin-bottom: 4px; }
+  .header-name { font-size: 22px; font-weight: 800; }
+
+  /* Day row */
+  .day-row { display: flex; gap: 6px; padding: 16px 16px 0; }
+  .day-pill {
+    flex: 1; padding: 8px 2px; background: #fff; border: 1.5px solid #D8D2C4;
+    border-radius: 6px; cursor: pointer; color: #6B6459; font-size: 13px; text-align: center;
+  }
+  .day-pill.active { background: #1F1B16; border-color: #1F1B16; color: #F5F2EC; }
+  .day-pill .d-name { font-weight: 700; }
+  .day-pill .d-kcal { font-size: 10px; opacity: 0.7; }
+
+  /* Totals card */
+  .totals-card { margin: 16px 16px 0; background: #fff; border: 1.5px solid #D8D2C4; border-radius: 8px; padding: 18px 16px; }
+  .kcal-big { display: flex; align-items: baseline; justify-content: center; gap: 8px; margin-bottom: 14px; }
+  .kcal-num { font-size: 34px; font-weight: 800; }
+  .kcal-label { font-size: 13px; color: #6B6459; }
+  .macro-row { display: flex; border-top: 1px solid #EDE9E0; padding-top: 12px; }
+  .macro-stat { text-align: center; flex: 1; }
+  .macro-stat .val { font-size: 18px; font-weight: 800; }
+  .macro-stat .lbl { font-size: 10px; color: #6B7280; letter-spacing: 0.4px; text-transform: uppercase; }
+
+  .section { margin: 20px 16px 0; }
+  .section-label {
+    font-size: 12px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
+    color: #6B6459; margin-bottom: 10px;
+  }
+  .empty-state { font-size: 13px; color: #9C9384; padding: 12px 0; font-style: italic; }
+
+  .entry-row {
+    display: flex; align-items: center; background: #fff; border: 1px solid #EDE9E0;
+    border-radius: 6px; padding: 10px 12px; margin-bottom: 6px;
+  }
+  .entry-name { font-size: 14px; font-weight: 600; }
+  .entry-macros { font-size: 12px; color: #8A8272; margin-top: 2px; }
+  .delete-btn { background: none; border: none; cursor: pointer; padding: 4px; color: #9CA3AF; font-size: 16px; }
+
+  .group-block { margin-bottom: 8px; }
+  .group-header {
+    display: flex; align-items: center; justify-content: space-between; width: 100%;
+    background: #fff; border: 1.5px solid #D8D2C4; border-left: 4px solid; border-radius: 6px;
+    padding: 12px 14px; cursor: pointer; font-size: 14px; font-weight: 800;
+  }
+  .group-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+  .group-item {
+    background: #fff; border: 1px solid #EDE9E0; border-radius: 6px; padding: 10px;
+    text-align: left; cursor: pointer;
+  }
+  .group-item-name { font-size: 12.5px; font-weight: 700; margin-bottom: 3px; line-height: 1.3; }
+  .group-item-macros { font-size: 10.5px; color: #8A8272; }
+
+  .collapse-header {
+    display: flex; align-items: center; justify-content: space-between; width: 100%;
+    background: none; border: none; cursor: pointer; padding: 0; color: #1A1A1A;
+  }
+  .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .preset-card {
+    background: #fff; border: 1.5px solid #D8D2C4; border-radius: 8px; padding: 12px 10px;
+    text-align: left; cursor: pointer;
+  }
+  .preset-name { font-size: 12.5px; font-weight: 700; margin: 0 0 4px; line-height: 1.3; }
+  .preset-macros { font-size: 11px; color: #6B6459; }
+  .preset-kcal { font-size: 11px; font-weight: 700; color: #E8542A; margin-top: 2px; }
+
+  .week-summary { margin: 24px 16px 0; background: #1F1B16; border-radius: 8px; padding: 16px; color: #F5F2EC; }
+  .week-totals-row { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; font-weight: 600; }
+  .footer { text-align: center; font-size: 11px; color: #9C9384; margin-top: 24px; }
+
+  .toast {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    background: #1F1B16; color: #F5F2EC; padding: 8px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 600; z-index: 100;
+  }
+
+  .coach-card { margin: 0 16px 12px; background: #fff; border: 1.5px solid #D8D2C4; border-radius: 8px; padding: 14px; }
+  .coach-card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .coach-card-name { font-size: 16px; font-weight: 800; }
+  .coach-card-kcal { font-size: 12.5px; color: #E8542A; font-weight: 700; }
+  .coach-macro-row { display: flex; gap: 12px; font-size: 12px; color: #6B6459; margin-bottom: 10px; flex-wrap: wrap; }
+  .coach-day-strip { display: flex; gap: 4px; margin-bottom: 8px; }
+  .coach-day-pill { flex: 1; text-align: center; background: #F5F2EC; border-radius: 4px; padding: 4px 0; }
+  .coach-week-total { font-size: 11.5px; color: #8A8272; border-top: 1px solid #EDE9E0; padding-top: 8px; }
+
+  .loading-msg { text-align: center; padding: 60px 20px; color: #6B6459; font-size: 14px; }
+
+  .lookup-card { background: #fff; border: 1.5px solid #D8D2C4; border-radius: 8px; padding: 14px; }
+  .lookup-row { display: flex; gap: 6px; margin-bottom: 8px; }
+  .lookup-input {
+    flex: 1; padding: 12px; font-size: 14px; border: 1px solid #D8D2C4; border-radius: 6px; min-width: 0;
+  }
+  .lookup-btn {
+    width: 46px; background: #1F3A5F; border: none; border-radius: 6px; display: flex;
+    align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; color: #fff; font-size: 16px;
+  }
+  .lookup-btn:disabled { opacity: 0.5; cursor: default; }
+  .photo-btn {
+    width: 100%; padding: 12px 0; background: #F5F2EC; border: 1.5px dashed #C9A036; border-radius: 6px;
+    color: #6B6459; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 4px;
+  }
+  .lookup-hint { font-size: 12.5px; color: #8A8272; margin-top: 6px; font-style: italic; }
+  .lookup-result-card {
+    margin-top: 10px; background: #F5F2EC; border: 1.5px solid #1F3A5F; border-radius: 8px; padding: 12px;
+  }
+  .lookup-result-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .lookup-result-macros { font-size: 12.5px; color: #6B6459; margin-bottom: 10px; }
+  .lookup-result-actions { display: flex; gap: 8px; }
+  .lookup-confirm-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 0;
+    background: #3F7654; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer;
+  }
+  .lookup-retry-btn {
+    padding: 10px 14px; background: none; border: 1px solid #D8D2C4; border-radius: 6px; font-size: 13px;
+    color: #6B6459; cursor: pointer;
+  }
+  .img-preview { max-width: 100%; border-radius: 6px; margin-bottom: 8px; max-height: 160px; object-fit: cover; }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<!-- Firebase (compat SDK, no build step needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+// ===================== FIREBASE CONFIG =====================
+const firebaseConfig = {
+  apiKey: "AIzaSyAATrisFjqgFxPDH16nYncFNgFPXf1SqSY",
+  authDomain: "ja23-macrotracker.firebaseapp.com",
+  projectId: "ja23-macrotracker",
+  storageBucket: "ja23-macrotracker.firebasestorage.app",
+  messagingSenderId: "243806252732",
+  appId: "1:243806252732:web:d9a3ee2dd031f32ac8eab9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ===================== DATA =====================
+const COACH_PIN = "2400";
+const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+const PRESET_MEALS = [
+  { name: "Eggs + oats + berries", protein: 42, carbs: 55, fat: 18, fiber: 6, kcal: 540 },
+  { name: "Chicken + rice + veg", protein: 55, carbs: 90, fat: 10, fiber: 4, kcal: 660 },
+  { name: "Shake + rice cakes + PB + banana", protein: 50, carbs: 60, fat: 16, fiber: 3, kcal: 580 },
+  { name: "Ground beef/turkey + rice + veg", protein: 60, carbs: 95, fat: 22, fiber: 5, kcal: 830 },
+  { name: "Salmon or chicken thigh + rice + salad", protein: 52, carbs: 80, fat: 24, fiber: 5, kcal: 750 },
+  { name: "Steak + sweet potato + veg", protein: 58, carbs: 65, fat: 26, fiber: 6, kcal: 780 },
+];
+
+const FOOD_GROUPS = {
+  protein: { label: "Protein", color: "#1F3A5F", items: [
+    { name: "Chicken breast (8oz)", protein: 54, carbs: 0, fat: 6, fiber: 0, kcal: 280 },
+    { name: "Ground beef 90/10 (8oz)", protein: 50, carbs: 0, fat: 20, fiber: 0, kcal: 400 },
+    { name: "Eggs (3 whole)", protein: 18, carbs: 1, fat: 15, fiber: 0, kcal: 210 },
+    { name: "Salmon (6oz)", protein: 40, carbs: 0, fat: 18, fiber: 0, kcal: 340 },
+    { name: "Whey protein (2 scoops)", protein: 48, carbs: 4, fat: 3, fiber: 0, kcal: 240 },
+    { name: "Steak (8oz)", protein: 52, carbs: 0, fat: 24, fiber: 0, kcal: 420 },
+    { name: "Greek yogurt (1 cup)", protein: 22, carbs: 8, fat: 0, fiber: 0, kcal: 120 },
+    { name: "Turkey breast (8oz)", protein: 52, carbs: 0, fat: 4, fiber: 0, kcal: 240 },
+  ]},
+  carbs: { label: "Carbs", color: "#3F7654", items: [
+    { name: "White rice (1.5 cups cooked)", protein: 4, carbs: 65, fat: 1, fiber: 1, kcal: 300 },
+    { name: "Oats (1 cup dry)", protein: 11, carbs: 54, fat: 6, fiber: 8, kcal: 300 },
+    { name: "Sweet potato (1 medium)", protein: 2, carbs: 26, fat: 0, fiber: 4, kcal: 115 },
+    { name: "White potato (1 large)", protein: 5, carbs: 65, fat: 0, fiber: 5, kcal: 280 },
+    { name: "Bread (2 slices)", protein: 6, carbs: 26, fat: 2, fiber: 2, kcal: 150 },
+    { name: "Banana (1 medium)", protein: 1, carbs: 27, fat: 0, fiber: 3, kcal: 105 },
+    { name: "Rice cakes (2)", protein: 1, carbs: 15, fat: 0, fiber: 0, kcal: 70 },
+    { name: "Pasta (2 cups cooked)", protein: 14, carbs: 84, fat: 2, fiber: 5, kcal: 400 },
+  ]},
+  fats: { label: "Fats", color: "#C9A036", items: [
+    { name: "Peanut butter (2 tbsp)", protein: 8, carbs: 6, fat: 16, fiber: 2, kcal: 190 },
+    { name: "Olive oil (1 tbsp)", protein: 0, carbs: 0, fat: 14, fiber: 0, kcal: 120 },
+    { name: "Avocado (1/2)", protein: 1, carbs: 6, fat: 11, fiber: 5, kcal: 120 },
+    { name: "Almonds (1oz, ~23)", protein: 6, carbs: 6, fat: 14, fiber: 4, kcal: 165 },
+    { name: "Cheese (1oz slice)", protein: 7, carbs: 1, fat: 9, fiber: 0, kcal: 110 },
+    { name: "Butter (1 tbsp)", protein: 0, carbs: 0, fat: 11, fiber: 0, kcal: 100 },
+  ]},
+  fiber: { label: "Fiber / Veg", color: "#7A4F9E", items: [
+    { name: "Broccoli (1 cup)", protein: 3, carbs: 6, fat: 0, fiber: 2, kcal: 30 },
+    { name: "Mixed salad + veg (2 cups)", protein: 2, carbs: 8, fat: 0, fiber: 3, kcal: 40 },
+    { name: "Green beans (1 cup)", protein: 2, carbs: 10, fat: 0, fiber: 4, kcal: 44 },
+    { name: "Berries (1 cup)", protein: 1, carbs: 21, fat: 0, fiber: 4, kcal: 85 },
+    { name: "Carrots (1 cup)", protein: 1, carbs: 12, fat: 0, fiber: 3, kcal: 50 },
+    { name: "Apple (1 medium)", protein: 0, carbs: 25, fat: 0, fiber: 4, kcal: 95 },
+  ]},
+};
+
+// ===================== HELPERS =====================
+function todayInfo() {
+  const d = new Date();
+  const day = (d.getDay() + 6) % 7; // Mon=0
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - day);
+  const weekId = monday.toISOString().slice(0,10);
+  return { weekId, dayIndex: day };
+}
+function emptyWeek(weekId) {
+  return { weekId, days: DAYS.map(() => ({ entries: [] })) };
+}
+function dayTotals(dayObj) {
+  return dayObj.entries.reduce((acc,e) => ({
+    protein: acc.protein + (e.protein||0),
+    carbs: acc.carbs + (e.carbs||0),
+    fat: acc.fat + (e.fat||0),
+    fiber: acc.fiber + (e.fiber||0),
+    kcal: acc.kcal + (e.kcal||0),
+  }), {protein:0,carbs:0,fat:0,fiber:0,kcal:0});
+}
+function weekTotalsOf(week) {
+  return week.days.reduce((acc,d) => {
+    const t = dayTotals(d);
+    return { protein: acc.protein+t.protein, carbs: acc.carbs+t.carbs, fat: acc.fat+t.fat, fiber: acc.fiber+t.fiber, kcal: acc.kcal+t.kcal };
+  }, {protein:0,carbs:0,fat:0,fiber:0,kcal:0});
+}
+function r(n) { return Math.round(n); }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ===================== STATE =====================
+let state = {
+  view: "loading", // loading | gate | client | coachGate | coach
+  clientName: localStorage.getItem("ja23_client_name") || "",
+  week: null,
+  activeDay: todayInfo().dayIndex,
+  openGroup: null,
+  showPresets: false,
+  pinError: false,
+  allClients: [],
+  coachLoading: false,
+  toastMsg: "",
+  searchQuery: "",
+  searchState: "idle", // idle | loading | ready | error
+  searchResult: null,
+  photoPreview: null,
+};
+
+function flash(msg) {
+  state.toastMsg = msg;
+  render();
+  setTimeout(() => { state.toastMsg = ""; render(); }, 1600);
+}
+
+// ===================== FIRESTORE OPS =====================
+async function loadWeek(name) {
+  const { weekId } = todayInfo();
+  const docId = `${name}__${weekId}`;
+  const doc = await db.collection("weeks").doc(docId).get();
+  if (doc.exists) return doc.data();
+  return emptyWeek(weekId);
+}
+async function saveWeek(name, week) {
+  const docId = `${name}__${week.weekId}`;
+  await db.collection("weeks").doc(docId).set(week);
+  await db.collection("roster").doc("clients").set(
+    { names: firebase.firestore.FieldValue.arrayUnion(name) },
+    { merge: true }
+  );
+}
+async function loadRoster() {
+  const doc = await db.collection("roster").doc("clients").get();
+  return doc.exists ? (doc.data().names || []) : [];
+}
+
+// ===================== ACTIONS =====================
+async function handleSetName(name) {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  localStorage.setItem("ja23_client_name", trimmed);
+  state.clientName = trimmed;
+  state.view = "client";
+  render();
+  state.week = await loadWeek(trimmed);
+  render();
+}
+
+async function addEntry(entry) {
+  if (!state.week) return;
+  const updated = JSON.parse(JSON.stringify(state.week));
+  updated.days[state.activeDay].entries.push({ ...entry, id: `${Date.now()}-${Math.random().toString(36).slice(2,7)}` });
+  state.week = updated;
+  render();
+  try {
+    await saveWeek(state.clientName, updated);
+    flash(`Added: ${entry.name}`);
+  } catch(e) {
+    flash("Couldn't save — check connection");
+  }
+}
+
+async function removeEntry(entryId) {
+  if (!state.week) return;
+  const updated = JSON.parse(JSON.stringify(state.week));
+  updated.days[state.activeDay].entries = updated.days[state.activeDay].entries.filter(e => e.id !== entryId);
+  state.week = updated;
+  render();
+  try { await saveWeek(state.clientName, updated); } catch(e) { flash("Couldn't save"); }
+}
+
+async function runTextLookup() {
+  const q = state.searchQuery.trim();
+  if (!q) return;
+  state.searchState = "loading";
+  state.searchResult = null;
+  render();
+  try {
+    const res = await fetch("/.netlify/functions/analyze-food", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "text", text: q }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      state.searchState = "error";
+      flash(data.error ? `Couldn't identify: ${data.error}` : "Lookup failed");
+      return;
+    }
+    state.searchResult = normalizeResult(data, q);
+    state.searchState = "ready";
+    render();
+  } catch (e) {
+    state.searchState = "error";
+    flash("Lookup failed — check connection");
+  }
+}
+
+async function runPhotoLookup(file) {
+  state.searchState = "loading";
+  state.searchResult = null;
+  render();
+  try {
+    const base64 = await fileToBase64(file);
+    state.photoPreview = `data:${file.type};base64,${base64}`;
+    render();
+    const res = await fetch("/.netlify/functions/analyze-food", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "image", imageBase64: base64, mediaType: file.type }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      state.searchState = "error";
+      flash(data.error ? `Couldn't identify: ${data.error}` : "Photo lookup failed");
+      return;
+    }
+    state.searchResult = normalizeResult(data, "Photo meal");
+    state.searchState = "ready";
+    render();
+  } catch (e) {
+    state.searchState = "error";
+    flash("Photo lookup failed — check connection");
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function normalizeResult(parsed, fallbackName) {
+  return {
+    name: parsed.name || fallbackName,
+    protein: Math.round(Number(parsed.protein)) || 0,
+    carbs: Math.round(Number(parsed.carbs)) || 0,
+    fat: Math.round(Number(parsed.fat)) || 0,
+    fiber: Math.round(Number(parsed.fiber)) || 0,
+    kcal: Math.round(Number(parsed.kcal)) || 0,
+  };
+}
+
+function confirmSearchResult() {
+  if (!state.searchResult) return;
+  addEntry(state.searchResult);
+  resetSearch();
+}
+
+function resetSearch() {
+  state.searchQuery = "";
+  state.searchResult = null;
+  state.searchState = "idle";
+  state.photoPreview = null;
+  render();
+}
+
+function checkPin(pin) {
+  if (pin === COACH_PIN) {
+    state.pinError = false;
+    loadCoachView();
+  } else {
+    state.pinError = true;
+    render();
+  }
+}
+
+async function loadCoachView() {
+  state.view = "coach";
+  state.coachLoading = true;
+  render();
+  try {
+    const roster = await loadRoster();
+    const { weekId } = todayInfo();
+    const clientsData = [];
+    for (const name of roster) {
+      const docId = `${name}__${weekId}`;
+      const doc = await db.collection("weeks").doc(docId).get();
+      const w = doc.exists ? doc.data() : emptyWeek(weekId);
+      clientsData.push({ name, week: w });
+    }
+    state.allClients = clientsData;
+  } catch(e) {
+    flash("Couldn't load client data");
+  }
+  state.coachLoading = false;
+  render();
+}
+
+// ===================== RENDER =====================
+function render() {
+  const app = document.getElementById("app");
+  const toastHtml = state.toastMsg ? `<div class="toast">${escapeHtml(state.toastMsg)}</div>` : "";
+
+  if (state.view === "loading") {
+    app.innerHTML = `<div class="loading-msg">Loading…</div>`;
+    return;
+  }
+
+  if (state.view === "gate") {
+    app.innerHTML = `
+      ${toastHtml}
+      <div class="gate-wrap">
+        <div class="gate-mark">JA23</div>
+        <h1 class="gate-title">Weekly Log</h1>
+        <p class="gate-sub">Enter your name to start your week.</p>
+        <input class="gate-input" id="nameInput" placeholder="First name" />
+        <button class="gate-btn" id="startBtn">Start tracking</button>
+        <button class="coach-link-btn" id="coachLinkBtn">🔒 Coach view</button>
+      </div>`;
+    document.getElementById("startBtn").onclick = () => handleSetName(document.getElementById("nameInput").value);
+    document.getElementById("nameInput").onkeydown = (e) => { if (e.key === "Enter") handleSetName(e.target.value); };
+    document.getElementById("coachLinkBtn").onclick = () => { state.view = "coachGate"; render(); };
+    return;
+  }
+
+  if (state.view === "coachGate") {
+    app.innerHTML = `
+      ${toastHtml}
+      <div class="gate-wrap">
+        <button class="back-link" id="backBtn">← Back</button>
+        <div class="gate-mark">JA23</div>
+        <h1 class="gate-title">Coach View</h1>
+        <p class="gate-sub">Enter PIN to see all client logs.</p>
+        <input class="gate-input" id="pinInput" type="password" inputmode="numeric" placeholder="PIN"
+          style="text-align:center;letter-spacing:4px;${state.pinError ? 'border-color:#C0392B;' : ''}" />
+        ${state.pinError ? '<div class="pin-error">Incorrect PIN</div>' : ''}
+        <button class="gate-btn" id="viewClientsBtn">View clients</button>
+      </div>`;
+    document.getElementById("backBtn").onclick = () => { state.view = state.clientName ? "client" : "gate"; render(); };
+    document.getElementById("viewClientsBtn").onclick = () => checkPin(document.getElementById("pinInput").value);
+    document.getElementById("pinInput").onkeydown = (e) => { if (e.key === "Enter") checkPin(e.target.value); };
+    return;
+  }
+
+  if (state.view === "coach") {
+    let cardsHtml = "";
+    if (state.coachLoading) {
+      cardsHtml = `<div class="empty-state" style="margin:16px;">Loading clients…</div>`;
+    } else if (state.allClients.length === 0) {
+      cardsHtml = `<div class="empty-state" style="margin:16px;">No clients have logged anything yet.</div>`;
+    } else {
+      const { dayIndex } = todayInfo();
+      cardsHtml = state.allClients.map(c => {
+        const todayT = dayTotals(c.week.days[dayIndex]);
+        const wT = weekTotalsOf(c.week);
+        const dayStrip = DAYS.map((d,i) => {
+          const t = dayTotals(c.week.days[i]);
+          return `<div class="coach-day-pill"><div style="font-size:9px;opacity:.6;">${d}</div><div style="font-size:11px;font-weight:700;">${t.kcal>0?r(t.kcal):'—'}</div></div>`;
+        }).join("");
+        return `
+          <div class="coach-card">
+            <div class="coach-card-header">
+              <span class="coach-card-name">${escapeHtml(c.name)}</span>
+              <span class="coach-card-kcal">${r(todayT.kcal)} kcal today</span>
+            </div>
+            <div class="coach-macro-row">
+              <span>${r(todayT.protein)}g protein</span>
+              <span>${r(todayT.carbs)}g carbs</span>
+              <span>${r(todayT.fat)}g fat</span>
+              <span>${r(todayT.fiber)}g fiber</span>
+            </div>
+            <div class="coach-day-strip">${dayStrip}</div>
+            <div class="coach-week-total">Week: ${r(wT.kcal)} kcal · ${r(wT.protein)}p / ${r(wT.carbs)}c / ${r(wT.fat)}f / ${r(wT.fiber)} fiber</div>
+          </div>`;
+      }).join("");
+    }
+    app.innerHTML = `
+      ${toastHtml}
+      <div class="header">
+        <button class="header-back" id="headerBackBtn">←</button>
+        <div>
+          <div class="header-mark">JA23 PERFORMANCE</div>
+          <div class="header-name">👥 Coach View</div>
+        </div>
+      </div>
+      ${cardsHtml}`;
+    document.getElementById("headerBackBtn").onclick = () => { state.view = state.clientName ? "client" : "gate"; render(); };
+    return;
+  }
+
+  // ---- CLIENT VIEW ----
+  if (!state.week) {
+    app.innerHTML = `<div class="loading-msg">Loading your log…</div>`;
+    return;
+  }
+  const totals = dayTotals(state.week.days[state.activeDay]);
+  const wTotals = weekTotalsOf(state.week);
+
+  const dayRowHtml = DAYS.map((d,i) => {
+    const t = dayTotals(state.week.days[i]);
+    const has = t.kcal > 0;
+    return `<button class="day-pill ${i===state.activeDay?'active':''}" data-day="${i}">
+      <div class="d-name">${d}</div><div class="d-kcal">${has?r(t.kcal):'—'}</div>
+    </button>`;
+  }).join("");
+
+  const entriesHtml = state.week.days[state.activeDay].entries.length === 0
+    ? `<div class="empty-state">Nothing logged yet — tap an item below.</div>`
+    : state.week.days[state.activeDay].entries.map(e => `
+      <div class="entry-row">
+        <div style="flex:1;">
+          <div class="entry-name">${escapeHtml(e.name)}</div>
+          <div class="entry-macros">${r(e.protein)}p · ${r(e.carbs)}c · ${r(e.fat)}f · ${r(e.fiber||0)}fib · ${r(e.kcal)} kcal</div>
+        </div>
+        <button class="delete-btn" data-remove="${e.id}">✕</button>
+      </div>`).join("");
+
+  const groupsHtml = Object.entries(FOOD_GROUPS).map(([key, group]) => {
+    const isOpen = state.openGroup === key;
+    const itemsHtml = group.items.map(item => `
+      <button class="group-item" data-group-item='${escapeHtml(JSON.stringify(item))}'>
+        <div class="group-item-name">${escapeHtml(item.name)}</div>
+        <div class="group-item-macros">${item.protein}p · ${item.carbs}c · ${item.fat}f · ${item.kcal} kcal</div>
+      </button>`).join("");
+    return `
+      <div class="group-block">
+        <button class="group-header" style="border-left-color:${group.color};" data-toggle-group="${key}">
+          <span style="color:${group.color};">${group.label}</span>
+          <span>${isOpen ? '▲' : '▼'}</span>
+        </button>
+        ${isOpen ? `<div class="group-grid">${itemsHtml}</div>` : ""}
+      </div>`;
+  }).join("");
+
+  const presetHtml = PRESET_MEALS.map(m => `
+    <button class="preset-card" data-preset='${escapeHtml(JSON.stringify(m))}'>
+      <div class="preset-name">${escapeHtml(m.name)}</div>
+      <div class="preset-macros">${m.protein}p · ${m.carbs}c · ${m.fat}f</div>
+      <div class="preset-kcal">${m.kcal} kcal</div>
+    </button>`).join("");
+
+  app.innerHTML = `
+    ${toastHtml}
+    <div class="header">
+      <div>
+        <div class="header-mark">JA23 PERFORMANCE</div>
+        <div class="header-name">${escapeHtml(state.clientName)}'s Log</div>
+      </div>
+    </div>
+    <div class="day-row">${dayRowHtml}</div>
+    <div class="totals-card">
+      <div class="kcal-big">
+        <span style="color:#E8542A;font-size:20px;">🔥</span>
+        <span class="kcal-num">${r(totals.kcal)}</span>
+        <span class="kcal-label">kcal today</span>
+      </div>
+      <div class="macro-row">
+        <div class="macro-stat"><div class="val" style="color:#1F3A5F;">${r(totals.protein)}g</div><div class="lbl">Protein</div></div>
+        <div class="macro-stat"><div class="val" style="color:#3F7654;">${r(totals.carbs)}g</div><div class="lbl">Carbs</div></div>
+        <div class="macro-stat"><div class="val" style="color:#C9A036;">${r(totals.fat)}g</div><div class="lbl">Fat</div></div>
+        <div class="macro-stat"><div class="val" style="color:#7A4F9E;">${r(totals.fiber)}g</div><div class="lbl">Fiber</div></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-label">${DAYS[state.activeDay]}'s log</div>
+      ${entriesHtml}
+    </div>
+    <div class="section">
+      <div class="section-label">Search or snap a photo</div>
+      <div class="lookup-card">
+        <div class="lookup-row">
+          <input class="lookup-input" id="searchInput" placeholder="e.g. chicken parm sandwich"
+            value="${escapeHtml(state.searchQuery)}" ${state.searchState === "loading" ? "disabled" : ""} />
+          <button class="lookup-btn" id="searchBtn" ${state.searchState === "loading" ? "disabled" : ""}>
+            ${state.searchState === "loading" ? "…" : "🔍"}
+          </button>
+        </div>
+        <button class="photo-btn" id="photoBtn" ${state.searchState === "loading" ? "disabled" : ""}>📷 Or take/upload a photo of your meal</button>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" />
+
+        ${state.searchState === "loading" ? `<div class="lookup-hint">Checking macros…</div>` : ""}
+
+        ${state.photoPreview && state.searchState !== "idle" ? `<img class="img-preview" src="${state.photoPreview}" />` : ""}
+
+        ${state.searchState === "ready" && state.searchResult ? `
+          <div class="lookup-result-card">
+            <div class="lookup-result-name">${escapeHtml(state.searchResult.name)}</div>
+            <div class="lookup-result-macros">${state.searchResult.protein}p · ${state.searchResult.carbs}c · ${state.searchResult.fat}f · ${state.searchResult.fiber}fib · ${state.searchResult.kcal} kcal</div>
+            <div class="lookup-result-actions">
+              <button class="lookup-confirm-btn" id="confirmSearchBtn">✓ Add to ${DAYS[state.activeDay]}</button>
+              <button class="lookup-retry-btn" id="retrySearchBtn">Try again</button>
+            </div>
+          </div>` : ""}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Or tap to add</div>
+      ${groupsHtml}
+    </div>
+    <div class="section">
+      <button class="collapse-header" id="presetToggle">
+        <span class="section-label">Full rotation meals</span>
+        <span>${state.showPresets ? '▲' : '▼'}</span>
+      </button>
+      ${state.showPresets ? `<div class="preset-grid">${presetHtml}</div>` : ""}
+    </div>
+    <div class="week-summary">
+      <div class="section-label" style="color:#F5F2EC;">Week total</div>
+      <div class="week-totals-row">
+        <span>${r(wTotals.kcal)} kcal</span>
+        <span>${r(wTotals.protein)}g protein</span>
+        <span>${r(wTotals.carbs)}g carbs</span>
+        <span>${r(wTotals.fat)}g fat</span>
+        <span>${r(wTotals.fiber)}g fiber</span>
+      </div>
+    </div>
+    <div class="footer">Logged as ${escapeHtml(state.clientName)} · resets fresh each Monday</div>
+  `;
+
+  // wire events
+  document.querySelectorAll("[data-day]").forEach(btn => {
+    btn.onclick = () => { state.activeDay = parseInt(btn.getAttribute("data-day")); render(); };
+  });
+  document.querySelectorAll("[data-remove]").forEach(btn => {
+    btn.onclick = () => removeEntry(btn.getAttribute("data-remove"));
+  });
+  document.querySelectorAll("[data-toggle-group]").forEach(btn => {
+    btn.onclick = () => {
+      const key = btn.getAttribute("data-toggle-group");
+      state.openGroup = state.openGroup === key ? null : key;
+      render();
+    };
+  });
+  document.querySelectorAll("[data-group-item]").forEach(btn => {
+    btn.onclick = () => addEntry(JSON.parse(btn.getAttribute("data-group-item")));
+  });
+  document.querySelectorAll("[data-preset]").forEach(btn => {
+    btn.onclick = () => addEntry(JSON.parse(btn.getAttribute("data-preset")));
+  });
+  const presetToggle = document.getElementById("presetToggle");
+  if (presetToggle) presetToggle.onclick = () => { state.showPresets = !state.showPresets; render(); };
+
+  const searchInput = document.getElementById("searchInput");
+  const searchBtn = document.getElementById("searchBtn");
+  const photoBtn = document.getElementById("photoBtn");
+  const photoInput = document.getElementById("photoInput");
+  const confirmSearchBtn = document.getElementById("confirmSearchBtn");
+  const retrySearchBtn = document.getElementById("retrySearchBtn");
+
+  if (searchInput) {
+    searchInput.oninput = (e) => { state.searchQuery = e.target.value; };
+    searchInput.onkeydown = (e) => { if (e.key === "Enter") runTextLookup(); };
+  }
+  if (searchBtn) searchBtn.onclick = () => runTextLookup();
+  if (photoBtn) photoBtn.onclick = () => photoInput.click();
+  if (photoInput) {
+    photoInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) runPhotoLookup(file);
+    };
+  }
+  if (confirmSearchBtn) confirmSearchBtn.onclick = () => confirmSearchResult();
+  if (retrySearchBtn) retrySearchBtn.onclick = () => resetSearch();
+}
+
+// ===================== BOOT =====================
+(async function boot() {
+  if (state.clientName) {
+    state.view = "client";
+    render();
+    state.week = await loadWeek(state.clientName);
+    render();
+  } else {
+    state.view = "gate";
+    render();
+  }
+})();
+</script>
+</body>
+</html>
