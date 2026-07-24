@@ -1,4 +1,4 @@
-javascript
+
 // Netlify serverless function — keeps the Anthropic API key server-side only.
 // The API key is read from an environment variable (set in Netlify dashboard),
 // never from the frontend code.
@@ -82,4 +82,4 @@ If the input isn't a real food or is too vague to estimate, respond with {"error
   } catch (e) {
     return { statusCode: 500, body: JSON.stringify({ error: e.message || "Unknown error" }) };
   }
-};
+
